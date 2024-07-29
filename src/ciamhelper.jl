@@ -55,7 +55,7 @@ function preplsl!(lslfile, subset, params, segnames)
 
     params["lslr"] = convert(Array{Float64,2}, Matrix(lsl_params))
     params["lslr_prior"] = convert(Array{Float64,2}, Matrix(lsl_params))
-    params["lslr_modeled"] = zeros(301, 12148)
+    params["lslr_modeled"] = zeros(20, 12148)
 
     return params
 end

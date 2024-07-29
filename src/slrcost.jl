@@ -20,7 +20,6 @@ using Mimi
     tstep = Parameter()                     # Length of individual time-step (years)
     at = Parameter(index = [adaptPers])    # Array of time indices that mark starts of adaptation periods
     ntsteps = Parameter{Int}()           # Number of time-steps
-    tmodel = Parameter(index = [time])   #Array of time indices that marks the time steps of the lslr model that correspond to MimiCIAM 
     # ---Model Parameters ---
     fixed = Parameter{Bool}()               # Run model as fixed (T) or flexible (F) with respect to adaptation
     noRetreat = Parameter{Bool}()           # Default (F). If T, segments will either protect or not adapt.
@@ -119,7 +118,7 @@ using Mimi
     # ---Sea Level Rise Parameters---
     lslr = Parameter(index = [time, segments], unit = "m")                # Local sea level rise (m)
     lslr_prior = Parameter(index = [time, segments], unit = "m")          #Local sea level rise (m) prior values for lslr_modeled
-    lslr_modeled = Parameter(index =[nmodelt, segments], unit = "m")          #Local sea level rise  (m) model
+    lslr_modeled = Parameter(index =[time, segments], unit = "m")          #Local sea level rise  (m) model
     lslr_update = Variable(index = [time, segments], unit = "m")          #Local sea lavel rise (m) update
     w1=Parameter(default = 0.5)                                           #Weight function for the Kalman filter
     adaptoptions = Parameter(index = [6])                     # Index of available adaptation levels for protect and retreat (0 is no adaptation)
@@ -215,18 +214,17 @@ using Mimi
         # This is a workaround for a type instability that should be fixed in Mimi.jl
         d_ciam_country = d.ciam_country::Vector{Int}
         d_segments = d.segments::Vector{Int}
-        print("HI")
+        println("H6")
 
         ti1 = TimestepIndex(1) # used a lot
-        timodel =  Int(p.tmodel[t]) #Time step of the model 
         #Kalman filter for local sea level rise
         if is_first(t)
             for m in d_segments
-                v.lslr_update[t,m]=p.lslr_prior[t,m]
+                v.lslr_update[:,m]=p.lslr_prior[:,m]
             end           
         else
             for m in d_segments
-                 v.lslr_update[t,m]=(1-p.w1)*p.lslr_prior[t,m]+p.w1*(p.lslr_modeled[timodel,m])
+                 v.lslr_update[t,m]=(1-p.w1)*p.lslr_prior[t,m]+p.w1*(p.lslr_modeled[t,m])
             end               
         end
        
@@ -354,11 +352,6 @@ using Mimi
                             v.vsl[ti, m] = 1e-6 * p.vslmult * p.ypcc[ti, p.rgn_ind_usa] * (p.ypcc[ti, rgn_ind] / p.ypcc[ti, p.rgn_ind_usa])^p.vslel   
                         end
                     end
-                    timodel1 =  Int(p.tmodel[ti]) #Time step of the model 
-                    v.lslr_update[ti,m]=(1-p.w1)*p.lslr_prior[ti,m]+p.w1*(p.lslr_modeled[timodel1,m])
-                    #println(p.lslr_prior[ti,m])
-                    #println(p.lslr_modeled[timodel1,m])
-                    #println(v.lslr_update[ti,m])
 
                     v.capital[ti, m] = p.kgdp * v.ypc_seg[ti, m] * v.popdens_seg[ti, m] * 1e-6
                     v.coastArea[ti, m] = calcCoastArea(view(v.areaparams, m, :), v.lslr_update[ti, m])
